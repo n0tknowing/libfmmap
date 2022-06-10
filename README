@@ -1,0 +1,16 @@
+libfmmap - helper library for memory-mapped files
+
+the purpose of this library is to save my time dealing with mmap-family
+functions while learning more about virtual memory.
+performance is not *really* the goal but if you find this fast compared to
+functions like read(), write(), fread(), fwrite(), etc. then it's good.
+
+here are some limitations:
+- currently, it only supports regular file.
+- only works on linux.
+
+nevertheless, it's support basic file operations like reading, writing,
+and seeking. see examples/ if you want to know how to use it.
+
+ok, now how do i add it to my project?
+just copy fmmap.c and fmmap.h to your source tree.
