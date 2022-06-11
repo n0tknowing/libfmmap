@@ -264,13 +264,17 @@ bool fmmap_iseof(struct fmmap *fm)
 
 int fmmap_close(struct fmmap *fm)
 {
-	if (!fm)
+	if (!fm) {
+		errno = EINVAL;
 		return -1;
+	}
 
 	int r;
 
 	(void)close(fm->fd); /* ignore if error */
 	r = munmap(fm->addr, fm->length);
+	fm->addr = NULL;
+	fm->fd = -1;
 	fm->length = fm->mode = fm->curoff = 0;
 	free(fm);
 
