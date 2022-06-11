@@ -64,16 +64,16 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 
 	void *buf;
 	struct fmmap *fm;
-	int fd, fd_mode, fm_mode, fm_flag;
+	int fd, fd_flag, fm_mode, fm_flag;
 
-	fd_mode = O_RDONLY;
+	fd_flag = O_RDONLY;
 	fm_mode = PROT_READ;
 
 	if ((mode & FMMAP_WRONLY) == FMMAP_WRONLY) {
-		fd_mode = O_RDWR;
+		fd_flag = O_RDWR;
 		fm_mode = PROT_WRITE;
 	} else if ((mode & FMMAP_RDWR) == FMMAP_RDWR) {
-		fd_mode = O_RDWR;
+		fd_flag = O_RDWR;
 		fm_mode = PROT_READ | PROT_WRITE;
 	}
 
@@ -82,7 +82,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 		return NULL;
 	}
 
-	fd = open(file, fd_mode);
+	fd = open(file, fd_flag | O_CLOEXEC);
 	if (fd < 0)
 		return NULL;
 
