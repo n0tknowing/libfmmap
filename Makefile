@@ -2,7 +2,7 @@ CC=gcc
 CFLAGS=-std=c99 -g -O2 -Wall -Wextra -pedantic -D_DEFAULT_SOURCE
 OBJS=fmmap.o
 
-all: ex1 ex2 ex3 ex4 ex5 ex6
+all: ex1 ex2 ex3 ex4 ex5 ex6 ex7
 
 ex1: $(OBJS)
 	$(CC) $(CFLAGS) $< examples/example.c -o $@
@@ -22,5 +22,8 @@ ex5: $(OBJS)
 ex6: $(OBJS)
 	$(CC) $(CFLAGS) $< examples/example5.c -o $@
 
+ex7: $(OBJS)
+	$(CC) $(CFLAGS) $< examples/example6.c -o $@
+
 clean:
-	rm -f $(OBJS) ex1 ex2 ex3 ex4 ex5 ex6
+	rm -f $(OBJS) ex1 ex2 ex3 ex4 ex5 ex6 ex7

@@ -49,6 +49,7 @@
 
 struct fmmap {
 	void *addr;
+	size_t mapsz;
 	size_t length;
 	size_t curoff;
 	int mode;
@@ -102,6 +103,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 		goto delete_map;
 
 	fm->addr = buf;
+	fm->mapsz = filelen;
 	fm->length = filelen;
 	fm->mode = mode;
 	fm->curoff = 0;
@@ -132,6 +134,54 @@ struct fmmap *fmmap_open(const char *file, int mode)
 	return fmmap_open_length(file, mode, sb.st_size);
 }
 
+struct fmmap *fmmap_create(const char *filename, int perms)
+{
+	if (!filename) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	void *buf;
+	struct fmmap *fm;
+	int fd;
+
+	fd = open(filename, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, perms);
+	if (fd < 0)
+		return NULL;
+
+	write(fd, "\n", 1);
+
+	buf = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (buf == MAP_FAILED)
+		goto close_fd;
+
+	if (madvise(buf, 4096, MADV_WILLNEED) < 0)
+		goto delete_map;
+
+	if (madvise(buf, 4096, MADV_SEQUENTIAL) < 0)
+		goto delete_map;
+
+	fm = malloc(sizeof(struct fmmap));
+	if (!fm)
+		goto delete_map;
+
+	fm->addr = buf;
+	fm->mapsz = 4096;
+	fm->length = 1;
+	fm->mode = FMMAP_RDWR;
+	fm->curoff = 0;
+	fm->fd = fd;
+
+	return fm;
+
+delete_map:
+	munmap(buf, 4096);
+
+close_fd:
+	close(fd);
+	return NULL;
+}
+
 size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 {
 	if (!fm || fm->mode == FMMAP_WRONLY || !ptr) {
@@ -145,14 +195,15 @@ size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 	if (!size)
 		return 0;
 
-	if (size > FMMAP_BLOCK_SIZE) {
-		while (size > FMMAP_BLOCK_SIZE && fm->curoff < fm->length) {
-			copysz = MIN(size, FMMAP_BLOCK_SIZE);
-			memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
-			fm->curoff += copysz;
-			size       -= copysz;
-			count      += copysz;
-		}
+	if (CUROFF_OVERFLOW(fm))
+		fm->curoff = fm->length;
+
+	while (size > FMMAP_BLOCK_SIZE && fm->curoff < fm->length) {
+		copysz = MIN(FMMAP_BLOCK_SIZE, fm->length - fm->curoff);
+		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
 	}
 
 	if (size > 0 && fm->curoff < fm->length) {
@@ -161,9 +212,6 @@ size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 		fm->curoff += copysz;
 		count      += copysz;
 	}
-
-	if (CUROFF_OVERFLOW(fm))
-		fm->curoff = fm->length;
 
 	return count;
 }
@@ -272,10 +320,10 @@ int fmmap_close(struct fmmap *fm)
 	int r;
 
 	(void)close(fm->fd); /* ignore if error */
-	r = munmap(fm->addr, fm->length);
+	r = munmap(fm->addr, fm->mapsz);
 	fm->addr = NULL;
 	fm->fd = -1;
-	fm->length = fm->mode = fm->curoff = 0;
+	fm->mapsz = fm->length = fm->mode = fm->curoff = 0;
 	free(fm);
 
 	return r;

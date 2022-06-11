@@ -9,8 +9,8 @@ here are some limitations:
 - currently, it only supports regular file.
 - only works on linux.
 
-nevertheless, it's support basic file operations like reading, writing,
-and seeking. see examples/ if you want to know how to use it.
+nevertheless, it's support basic file operations like creating, reading,
+writing, and seeking. see examples/ if you want to know how to use it.
 
 ok, now how do i add it to my project?
 just copy fmmap.c and fmmap.h to your source tree.
