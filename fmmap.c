@@ -42,10 +42,11 @@
 
 #include "fmmap.h"
 
-#define MAX(x,y)	((x) > (y) ? (x) : (y))
-#define MIN(x,y)	((x) < (y) ? (x) : (y))
-#define FMMAP_BLOCK_SIZE  (1 << 16)
-#define CUROFF_OVERFLOW(f) ((f)->curoff > (f)->length)
+#define MAX(x,y)		((x) > (y) ? (x) : (y))
+#define MIN(x,y)		((x) < (y) ? (x) : (y))
+#define CUROFF_OVERFLOW(f)	((f)->curoff > (f)->length)
+#define FMMAP_BLOCK_SIZE	(1 << 16)
+#define FMMAP_NEWFMAPSZ		4096
 
 struct fmmap {
 	void *addr;
@@ -92,11 +93,9 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	if (buf == MAP_FAILED)
 		goto close_fd;
 
-	if (madvise(buf, filelen, MADV_WILLNEED) < 0)
-		goto delete_map;
-
-	if (madvise(buf, filelen, MADV_SEQUENTIAL) < 0)
-		goto delete_map;
+	/* ignore these madvise if error */
+	madvise(buf, filelen, MADV_WILLNEED);
+	madvise(buf, filelen, MADV_SEQUENTIAL);
 
 	fm = malloc(sizeof(struct fmmap));
 	if (!fm)
@@ -151,22 +150,20 @@ struct fmmap *fmmap_create(const char *filename, int perms)
 
 	write(fd, "\n", 1);
 
-	buf = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	buf = mmap(NULL, FMMAP_NEWFMAPSZ, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	if (buf == MAP_FAILED)
 		goto close_fd;
 
-	if (madvise(buf, 4096, MADV_WILLNEED) < 0)
-		goto delete_map;
-
-	if (madvise(buf, 4096, MADV_SEQUENTIAL) < 0)
-		goto delete_map;
+	/* ignore these madvise if error */
+	madvise(buf, FMMAP_NEWFMAPSZ, MADV_WILLNEED);
+	madvise(buf, FMMAP_NEWFMAPSZ, MADV_SEQUENTIAL);
 
 	fm = malloc(sizeof(struct fmmap));
 	if (!fm)
 		goto delete_map;
 
 	fm->addr = buf;
-	fm->mapsz = 4096;
+	fm->mapsz = FMMAP_NEWFMAPSZ;
 	fm->length = 1;
 	fm->mode = FMMAP_RDWR;
 	fm->curoff = 0;
@@ -175,7 +172,7 @@ struct fmmap *fmmap_create(const char *filename, int perms)
 	return fm;
 
 delete_map:
-	munmap(buf, 4096);
+	munmap(buf, FMMAP_NEWFMAPSZ);
 
 close_fd:
 	close(fd);
