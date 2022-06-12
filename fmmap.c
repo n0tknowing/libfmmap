@@ -59,7 +59,7 @@ struct fmmap {
 
 struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 {
-	if (!file || mode < 0 || mode > 3) {
+	if (!file || mode < FMMAP_RDONLY || mode > FMMAP_RDWR) {
 		errno = EINVAL;
 		return NULL;
 	}
