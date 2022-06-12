@@ -2,7 +2,17 @@ CC=gcc
 CFLAGS=-std=c99 -g -O2 -Wall -Wextra -pedantic -D_DEFAULT_SOURCE
 OBJS=fmmap.o
 
-all: ex1 ex2 ex3 ex4 ex5 ex6 ex7
+ifdef SANITIZER
+ifeq ($(SANITIZER),address)
+	CFLAGS+=-fsanitize=address
+
+ifeq ($(SANITIZER),undefined)
+	CFLAGS+=-fsanitize=undefined
+endif
+endif
+endif
+
+all: ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8
 
 ex1: $(OBJS)
 	$(CC) $(CFLAGS) $< examples/example.c -o $@
@@ -25,5 +35,8 @@ ex6: $(OBJS)
 ex7: $(OBJS)
 	$(CC) $(CFLAGS) $< examples/example6.c -o $@
 
+ex8: $(OBJS)
+	$(CC) $(CFLAGS) $< examples/example7.c -o $@
+
 clean:
-	rm -f $(OBJS) ex1 ex2 ex3 ex4 ex5 ex6 ex7
+	rm -f $(OBJS) ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8

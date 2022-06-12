@@ -48,6 +48,10 @@
 #define FMMAP_BLOCK_SIZE	(1 << 16)
 #define FMMAP_NEWFMAPSZ		4096
 
+/* private function */
+static int fmmap_remap(struct fmmap *, size_t);
+static int fmmap_sync(struct fmmap *, size_t);
+
 struct fmmap {
 	void *addr;
 	size_t mapsz;
@@ -59,14 +63,20 @@ struct fmmap {
 
 struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 {
-	if (!file || mode < FMMAP_RDONLY || mode > FMMAP_RDWR) {
+	if (!file) {
 		errno = EINVAL;
+		return NULL;
+	}
+
+	if (filelen >= FMMAP_MAX_SIZE) {
+		errno = ERANGE;
 		return NULL;
 	}
 
 	void *buf;
 	struct fmmap *fm;
 	int fd, fd_flag, fm_mode, fm_flag;
+	size_t mapsz = filelen;
 
 	fd_flag = O_RDONLY;
 	fm_mode = PROT_READ;
@@ -79,30 +89,38 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 		fm_mode = PROT_READ | PROT_WRITE;
 	}
 
-	if (filelen >= FMMAP_MAX_SIZE) {
-		errno = ERANGE;
-		return NULL;
-	}
-
 	fd = open(file, fd_flag | O_CLOEXEC);
 	if (fd < 0)
 		return NULL;
 
 	fm_flag = MAP_SHARED;
-	buf = mmap(NULL, filelen, fm_mode, fm_flag, fd, 0);
+	buf = mmap(NULL, mapsz, fm_mode, fm_flag, fd, 0);
 	if (buf == MAP_FAILED)
 		goto close_fd;
 
+	if ((mode & FMMAP_TRUNC) == FMMAP_TRUNC) {
+		if ((mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
+			errno = EPERM;
+			goto delete_map;
+		} else if ((mode & FMMAP_APPEND) == FMMAP_APPEND) {
+			goto skip_trunc;
+		}
+
+		memset(buf, 0, filelen);
+		filelen = 0;
+	}
+
+skip_trunc:
 	/* ignore these madvise if error */
-	madvise(buf, filelen, MADV_WILLNEED);
-	madvise(buf, filelen, MADV_SEQUENTIAL);
+	madvise(buf, mapsz, MADV_WILLNEED);
+	madvise(buf, mapsz, MADV_SEQUENTIAL);
 
 	fm = malloc(sizeof(struct fmmap));
 	if (!fm)
 		goto delete_map;
 
 	fm->addr = buf;
-	fm->mapsz = filelen;
+	fm->mapsz = mapsz;
 	fm->length = filelen;
 	fm->mode = mode;
 	fm->curoff = 0;
@@ -111,7 +129,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	return fm;
 
 delete_map:
-	munmap(buf, filelen);
+	munmap(buf, mapsz);
 
 close_fd:
 	close(fd);
@@ -181,7 +199,10 @@ close_fd:
 
 size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 {
-	if (!fm || fm->mode == FMMAP_WRONLY || !ptr) {
+	if (!fm || !ptr) {
+		errno = EINVAL;
+		return 0;
+	} else if ((fm->mode & FMMAP_WRONLY) == FMMAP_WRONLY) {
 		errno = EINVAL;
 		return 0;
 	}
@@ -215,15 +236,42 @@ size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 
 size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 {
-	if (!fm || fm->mode == FMMAP_RDONLY || !ptr) {
+	if (!fm || !ptr) {
 		errno = EINVAL;
+		return 0;
+	} else if ((fm->mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
+		errno = EPERM;
 		return 0;
 	}
 
+	const uint8_t *sptr = ptr;
 	size_t count = 0;
 
 	if (!size)
 		return 0;
+
+	if ((fm->mode & FMMAP_APPEND) == FMMAP_APPEND)
+		fm->curoff = fm->length;
+
+	if (fmmap_remap(fm, fm->length + size) < 0)
+		return 0;
+
+	while (size > FMMAP_BLOCK_SIZE) {
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, FMMAP_BLOCK_SIZE);
+		fm->curoff += FMMAP_BLOCK_SIZE;
+		size       -= FMMAP_BLOCK_SIZE;
+		count      += FMMAP_BLOCK_SIZE;
+		if (fmmap_sync(fm, fm->curoff) < 0)
+			return 0;
+	}
+
+	if (size > 0) {
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, size);
+		fm->curoff += size;
+		count      += size;
+		if (fmmap_sync(fm, fm->curoff) < 0)
+			return 0;
+	}
 
 	return count;
 }
@@ -324,4 +372,69 @@ int fmmap_close(struct fmmap *fm)
 	free(fm);
 
 	return r;
+}
+
+/* private functions */
+static int fmmap_remap(struct fmmap *fm, size_t newsz)
+{
+	if (newsz <= fm->mapsz)
+		return 0;
+
+	if (munmap(fm->addr, fm->mapsz) < 0)
+		return -1;
+
+	fm->addr = NULL;
+	fm->mapsz = 0;
+
+	int fm_mode = PROT_WRITE, save = errno;
+	if (fm->mode == FMMAP_RDWR)
+		fm_mode |= PROT_READ;
+
+	void *new = mmap(NULL, newsz, fm_mode, MAP_SHARED, fm->fd, 0);
+	if (new == MAP_FAILED) {
+		fm->addr = NULL;
+		return -1;
+	}
+
+	madvise(new, newsz, MADV_WILLNEED);
+	madvise(new, newsz, MADV_SEQUENTIAL);
+
+	fm->addr = new;
+	fm->mapsz = newsz;
+
+	errno = save;
+	return 0;
+}
+
+static int fmmap_sync(struct fmmap *fm, size_t newflen)
+{
+	if (newflen <= fm->length)
+		return 0;
+
+	if (ftruncate(fm->fd, newflen) < 0)
+		return -1;
+
+	if (munmap(fm->addr, fm->mapsz) < 0)
+		return -1;
+
+	fm->addr = NULL;
+
+	int fm_mode = PROT_WRITE, save = errno;
+	if (fm->mode == FMMAP_RDWR)
+		fm_mode |= PROT_READ;
+
+	void *new = mmap(NULL, fm->mapsz, fm_mode, MAP_SHARED, fm->fd, 0);
+	if (new == MAP_FAILED) {
+		fm->addr = NULL;
+		return -1;
+	}
+
+	madvise(new, fm->mapsz, MADV_WILLNEED);
+	madvise(new, fm->mapsz, MADV_SEQUENTIAL);
+
+	fm->addr = new;
+	fm->length = newflen;
+
+	errno = save;
+	return 0;
 }

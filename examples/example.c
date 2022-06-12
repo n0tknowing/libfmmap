@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	char buf[65] = {0};
 	size_t r;
 
-	fm = fmmap_open(f, FMMAP_RDONLY);
+	fm = fmmap_open(f, FMMAP_RDWR);
 	if (!fm) {
 		perror(f);
 		return 1;
