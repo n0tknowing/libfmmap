@@ -6,7 +6,7 @@ performance is not *really* the goal but if you find this fast compared to
 functions like read(), write(), fread(), fwrite(), etc. then it's good.
 
 here are some limitations:
-- currently, it only supports regular file.
+- intended for regular file, and
 - only works on linux.
 
 nevertheless, it's support basic file operations like creating, reading,
