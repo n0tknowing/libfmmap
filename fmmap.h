@@ -54,31 +54,31 @@ typedef struct fmmap fmmap;
  * cannot be used on stdin, stdout, and stderr since they are not
  * regular files or devices.
  */
-fmmap *fmmap_open_length(const char *, int, size_t);
+fmmap *fmmap_open_length(const char *fname, int mode, size_t length);
 
 /* fmmap_open() doesn't work on pseudo filesystem like procfs.
  * 
  * st_size from stat() returns 0 therefore use fmmap_open_length() instead
  * and provide the 'len' manually by yourself.
  */
-fmmap *fmmap_open(const char *, int);
-fmmap *fmmap_create(const char *, int);
+fmmap *fmmap_open(const char *fname, int mode);
+fmmap *fmmap_create(const char *fname, int perms);
 
-size_t fmmap_read(fmmap *restrict, void *restrict, size_t);
-size_t fmmap_write(fmmap *restrict, const void *restrict, size_t);
+size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t length);
+size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t length);
 
 /* fmmap_seek() returns -1 and set ERANGE errno if offset is beyond
  * the actual file size.
  */
-off_t fmmap_seek(fmmap *, off_t, int);
+off_t fmmap_seek(fmmap *fm, off_t offset, int whence);
 
 /* in practice, fmmap_seek() is enough to covers these three functions.
  * but i will leave it to provide easy interfaces.
  */
-size_t fmmap_tell(fmmap *);
-size_t fmmap_length(fmmap *);
-void fmmap_rewind(fmmap *);
+size_t fmmap_tell(fmmap *fm);
+size_t fmmap_length(fmmap *fm);
+void fmmap_rewind(fmmap *fm);
 
-bool fmmap_iseof(fmmap *);
-int fmmap_close(fmmap *);
+bool fmmap_iseof(fmmap *fm);
+int fmmap_close(fmmap *fm);
 #endif  /* FMMAP_H */
