@@ -63,13 +63,8 @@ struct fmmap {
 
 struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 {
-	if (!file) {
+	if (!file || filelen == 0) {
 		errno = EINVAL;
-		return NULL;
-	}
-
-	if (filelen >= FMMAP_MAX_SIZE) {
-		errno = ERANGE;
 		return NULL;
 	}
 
@@ -77,6 +72,13 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	struct fmmap *fm;
 	int fd, fd_flag, fm_mode, fm_flag;
 	size_t mapsz = filelen;
+
+	if (filelen >= FMMAP_MAX_SIZE) {
+		errno = ERANGE;
+		return NULL;
+	} else if (filelen < FMMAP_NEWFMAPSZ) {
+		mapsz = FMMAP_NEWFMAPSZ;
+	}
 
 	fd_flag = O_RDONLY;
 	fm_mode = PROT_READ;
@@ -98,19 +100,20 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	if (buf == MAP_FAILED)
 		goto close_fd;
 
-	if ((mode & FMMAP_TRUNC) == FMMAP_TRUNC) {
+	/* when we encounter FMMAP_TRUNC and FMMAP_APPEND
+	 * at the same time, ignore FMMAP_TRUNC.
+	 */
+	if ((mode & FMMAP_TRUNC) == FMMAP_TRUNC &&
+	    (mode & FMMAP_APPEND) != FMMAP_APPEND) {
 		if ((mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
 			errno = EPERM;
 			goto delete_map;
-		} else if ((mode & FMMAP_APPEND) == FMMAP_APPEND) {
-			goto skip_trunc;
 		}
 
 		memset(buf, 0, filelen);
 		filelen = 0;
 	}
 
-skip_trunc:
 	/* ignore these madvise if error */
 	madvise(buf, mapsz, MADV_WILLNEED);
 	madvise(buf, mapsz, MADV_SEQUENTIAL);
@@ -151,15 +154,16 @@ struct fmmap *fmmap_open(const char *file, int mode)
 	return fmmap_open_length(file, mode, sb.st_size);
 }
 
-struct fmmap *fmmap_create(const char *filename, int perms)
+struct fmmap *fmmap_create(const char *filename, int mode, int perms)
 {
 	if (!filename) {
 		errno = EINVAL;
 		return NULL;
+	} else if ((mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
+		errno = EPERM;
+		return NULL;
 	}
 
-	void *buf;
-	struct fmmap *fm;
 	int fd;
 
 	fd = open(filename, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, perms);
@@ -167,34 +171,9 @@ struct fmmap *fmmap_create(const char *filename, int perms)
 		return NULL;
 
 	write(fd, "\n", 1);
-
-	buf = mmap(NULL, FMMAP_NEWFMAPSZ, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-	if (buf == MAP_FAILED)
-		goto close_fd;
-
-	/* ignore these madvise if error */
-	madvise(buf, FMMAP_NEWFMAPSZ, MADV_WILLNEED);
-	madvise(buf, FMMAP_NEWFMAPSZ, MADV_SEQUENTIAL);
-
-	fm = malloc(sizeof(struct fmmap));
-	if (!fm)
-		goto delete_map;
-
-	fm->addr = buf;
-	fm->mapsz = FMMAP_NEWFMAPSZ;
-	fm->length = 1;
-	fm->mode = FMMAP_RDWR;
-	fm->curoff = 0;
-	fm->fd = fd;
-
-	return fm;
-
-delete_map:
-	munmap(buf, FMMAP_NEWFMAPSZ);
-
-close_fd:
 	close(fd);
-	return NULL;
+
+	return fmmap_open_length(filename, mode, 1);
 }
 
 size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)

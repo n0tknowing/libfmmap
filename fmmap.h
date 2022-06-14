@@ -62,7 +62,7 @@ fmmap *fmmap_open_length(const char *fname, int mode, size_t length);
  * and provide the 'len' manually by yourself.
  */
 fmmap *fmmap_open(const char *fname, int mode);
-fmmap *fmmap_create(const char *fname, int perms);
+fmmap *fmmap_create(const char *fname, int mode, int perms);
 
 size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t length);
 size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t length);

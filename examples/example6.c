@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 	if (argc < 2)
 		return 1;
 
-	fmmap *fm = fmmap_create(argv[1], 0600);
+	fmmap *fm = fmmap_create(argv[1], FMMAP_RDONLY|FMMAP_APPEND, 0600);
 	if (!fm)
 		err(1, "fmmap_create");
 

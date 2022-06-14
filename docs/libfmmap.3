@@ -35,7 +35,7 @@ libfmmap \- helper library for memory-mapped file
 
 fmmap *fmmap_open_length(const char *fname, int mode, size_t len);
 fmmap *fmmap_open(const char *fname, int mode);
-fmmap *fmmap_create(const char *fname, int perms);
+fmmap *fmmap_create(const char *fname, int mode, int perms);
 int fmmap_close(fmmap *fm);
 
 size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t len);
@@ -49,7 +49,14 @@ void fmmap_rewind(fmmap *fm);
 bool fmmap_iseof(fmmap *fm);
 .fi
 .SH DESCRIPTION
-This library is providing easy to use functions for memory-mapped file.
+\fIPLEASE NOTE THAT LIBFMMAP ONLY WORKS ON REGULAR FILE AND LINUX\fP.
+
+This library provides an easy to use interfaces to work with memory-mapped
+file.  The interfaces are pretty simple if you know to use functions from
+\fI<stdio.h>\fP and \fI<unistd.h>\fP.
+
+It also handles problems like writing to memory and synchronizing with the file
+when done, file size and virtual address space are resize automatically.
 .SH RETURN VALUE
 .BR fmmap_open_length (),
 .BR fmmap_open (),
@@ -60,16 +67,16 @@ return a \fIfmmap\fP pointer on success or \fBNULL\fP on error.
 .BR fmmap_close ()
 returns 0 on success or -1 on error.
 
-.BR fmmap_read (),
+.BR fmmap_read ()
 and
 .BR fmmap_write ()
 return the number of \fIlen\fP bytes on success or 0 on error.
 
 .BR fmmap_seek ()
-returns the number of \fIoffset\fP bytes on success or \fB(off_t) -1\fP on
+returns the number of \fIoffset\fP bytes on success or \fI(off_t) -1\fP on
 error.
 
-.BR fmmap_tell (),
+.BR fmmap_tell ()
 and
 .BR fmmap_length ()
 return the current offset, and the file length respectively on success or 0 on
@@ -79,24 +86,32 @@ error.
 returns \fBtrue\fP on success or \fBfalse\fP on error.
 .SH ERRORS
 Almost all functions except
-.BR fmmap_rewind (),
+.BR fmmap_rewind ()
 and
 .BR fmmap_iseof ()
 is set an errno, you can use
 .BR perror (3)
 or
 .BR strerror (3)
-for human-readable error message from the standard library.
+for human-readable error message from the standard library.  Usually, this
+errno is set from underlying function that \fIlibfmmap\fP uses like
+.BR mmap (2).
 .SH SEE ALSO
 .BR mmap (2),
 .BR munmap (2),
 .BR mremap (2),
 .BR msync (2),
+.BR mprotect (2),
+.BR mlock (2),
 .BR open (2),
 .BR close (2),
 .BR read (2),
 .BR write (2),
-.BR ftruncate (2)
+.BR ftruncate (2),
+.BR fopen (3),
+.BR fclose (3),
+.BR fread (3),
+.BR fwrite (3)
 .SH AUTHOR
 Nathanael Eka Oktavian <nathekavian@gmail.com>.  Homepage
 https://github.com/n0tknowing/libfmmap.
