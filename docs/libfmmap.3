@@ -57,6 +57,55 @@ file.  The interfaces are pretty simple if you know to use functions from
 
 It also handles problems like writing to memory and synchronizing with the file
 when done, file size and virtual address space are resize automatically.
+
+.TP
+\fBfmmap *fmmap_open_length(const char *fname, int mode, size_t length);\fP
+Open \fIfname\fP with \fIlength\fP and set its file \fImode\fP.  Valid mode is
+one of \fIFMMAP_RDONLY\fP or \fIFMMAP_WRONLY\fP or \fIFMMAP_RDWR\fP.
+Additional mode for writing is available and it's one of
+\fIFMMAP_TRUNC\fP or \fIFMMAP_APPEND\fP.  You can't set these mode at the same
+time and if you set it, only \fIFMMAP_APPEND\fP will be used.
+
+.TP
+\fBfmmap *fmmap_open(const char *fname, int mode);\fP
+Open \fIfname\fP with mode \fImode\fP.  This function is almost same like
+.BR fmmap_open_length ()
+except that the file length is automatically determined, but if you try to
+use this function on pseudo filesystem like
+.BR proc (5)
+then please use
+.BR fmmap_open_length ()
+instead and provide the file length manually by yourself, the reason is because
+file inside procfs is always change and returns 0.
+
+.TP
+\fBfmmap *fmmap_create(const char *fname, int mode, int perms);\fP
+Both
+.BR fmmap_open_length ()
+and
+.BR fmmap_open ()
+can't be used if file doesn't exist, so to solve this problem you can create
+a new file with file name \fIfname\fP, set the file \fImode\fP, and set what
+file permission should be with \fIperms\fP.
+
+\fImode\fP is like
+.BR fmmap_open ()
+but you can't use \fIFMMAP_RDONLY\fP here.  And \fIperms\fP must be an octal
+value like \fI0600\fP.
+
+.TP
+\fBint fmmap_close(fmmap *fm);\fP
+Close any valid opened memory-mapped file from \fIfm\fP.  When this function is
+called, all data that written to memory is flushed and written back to the
+underlying file.
+
+.TP
+\fBsize_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t length);\fP
+Read data from file and put into \fIbuf\fP with \fIlength\fP bytes.
+
+.TP
+\fBsize_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t length);\fP
+Write data from \fIbuf\fP into file with \fIlength\fP bytes.
 .SH RETURN VALUE
 .BR fmmap_open_length (),
 .BR fmmap_open (),
@@ -93,8 +142,9 @@ is set an errno, you can use
 .BR perror (3)
 or
 .BR strerror (3)
-for human-readable error message from the standard library.  Usually, this
-errno is set from underlying function that \fIlibfmmap\fP uses like
+for converting this errno to human-readable error message from the
+standard library.  Usually, this errno is set from underlying function
+that \fIlibfmmap\fP uses like
 .BR mmap (2).
 .SH SEE ALSO
 .BR mmap (2),
