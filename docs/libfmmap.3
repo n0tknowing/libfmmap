@@ -1,0 +1,102 @@
+.\" Copyright (c) 2022, Nathanael Eka Oktavian <nathekavian@gmail.com>
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions are met:
+.\"
+.\" 1. Redistributions of source code must retain the above copyright notice, this
+.\"    list of conditions and the following disclaimer.
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright notice,
+.\"    this list of conditions and the following disclaimer in the documentation
+.\"    and/or other materials provided with the distribution.
+.\"
+.\" 3. Neither the name of the copyright holder nor the names of its
+.\"    contributors may be used to endorse or promote products derived from
+.\"    this software without specific prior written permission.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+.\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+.\" DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+.\" SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+.\" CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+.\" OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+.\" OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.TH LIBFMMAP 3 "14 June 2022" "libfmmap-git" "libfmmap Manual"
+.SH NAME
+libfmmap \- helper library for memory-mapped file
+.SH SYNOPSIS
+.nf
+.B #include <fmmap.h>
+
+fmmap *fmmap_open_length(const char *fname, int mode, size_t len);
+fmmap *fmmap_open(const char *fname, int mode);
+fmmap *fmmap_create(const char *fname, int perms);
+int fmmap_close(fmmap *fm);
+
+size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t len);
+size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t len);
+
+off_t fmmap_seek(fmmap *fm, off_t offset, int whence);
+size_t fmmap_tell(fmmap *fm);
+size_t fmmap_length(fmmap *fm);
+void fmmap_rewind(fmmap *fm);
+
+bool fmmap_iseof(fmmap *fm);
+.fi
+.SH DESCRIPTION
+This library is providing easy to use functions for memory-mapped file.
+.SH RETURN VALUE
+.BR fmmap_open_length (),
+.BR fmmap_open (),
+and
+.BR fmmap_create ()
+return a \fIfmmap\fP pointer on success or \fBNULL\fP on error.
+
+.BR fmmap_close ()
+returns 0 on success or -1 on error.
+
+.BR fmmap_read (),
+and
+.BR fmmap_write ()
+return the number of \fIlen\fP bytes on success or 0 on error.
+
+.BR fmmap_seek ()
+returns the number of \fIoffset\fP bytes on success or \fB(off_t) -1\fP on
+error.
+
+.BR fmmap_tell (),
+and
+.BR fmmap_length ()
+return the current offset, and the file length respectively on success or 0 on
+error.
+
+.BR fmmap_iseof ()
+returns \fBtrue\fP on success or \fBfalse\fP on error.
+.SH ERRORS
+Almost all functions except
+.BR fmmap_rewind (),
+and
+.BR fmmap_iseof ()
+is set an errno, you can use
+.BR perror (3)
+or
+.BR strerror (3)
+for human-readable error message from the standard library.
+.SH SEE ALSO
+.BR mmap (2),
+.BR munmap (2),
+.BR mremap (2),
+.BR msync (2),
+.BR open (2),
+.BR close (2),
+.BR read (2),
+.BR write (2),
+.BR ftruncate (2)
+.SH AUTHOR
+Nathanael Eka Oktavian <nathekavian@gmail.com>.  Homepage
+https://github.com/n0tknowing/libfmmap.
