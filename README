@@ -5,8 +5,7 @@ functions while learning more about virtual memory.
 performance is not *really* the goal but if you find this fast compared to
 functions like read(), write(), fread(), fwrite(), etc. then it's good.
 
-here are some limitations:
-- intended for regular file, and
+but, here are some limitation(s):
 - only works on linux.
 
 nevertheless, it's support basic file operations like creating, reading,
