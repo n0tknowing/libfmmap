@@ -1,15 +1,13 @@
 CC=gcc
-CFLAGS=-std=c99 -g -O2 -Wall -Wextra -pedantic -D_DEFAULT_SOURCE
+CFLAGS=-std=c99 -Wall -Wextra -pedantic -D_DEFAULT_SOURCE
 OBJS=fmmap.o
 
 ifdef SANITIZER
-ifeq ($(SANITIZER),address)
-	CFLAGS+=-fsanitize=address
-
-ifeq ($(SANITIZER),undefined)
-	CFLAGS+=-fsanitize=undefined
+ifeq ($(SANITIZER),1)
+	CFLAGS+=-g -Og -fsanitize=address,undefined
 endif
-endif
+else
+	CFLAGS+=-O2
 endif
 
 all: ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8
