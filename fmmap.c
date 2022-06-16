@@ -241,8 +241,6 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 		fm->curoff += copysz;
 		size       -= copysz;
 		count      += copysz;
-		if (fmmap_sync(fm, fm->curoff) < 0)
-			return 0;
 	}
 
 	if (size > 0) {
@@ -250,9 +248,10 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
 		fm->curoff += copysz;
 		count      += copysz;
-		if (fmmap_sync(fm, fm->curoff) < 0)
-			return 0;
 	}
+
+	if (fmmap_sync(fm, fm->curoff) < 0)
+		return 0;
 
 	return count;
 }
