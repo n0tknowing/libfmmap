@@ -222,7 +222,7 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 	}
 
 	const uint8_t *sptr = ptr;
-	size_t count = 0;
+	size_t count = 0, copysz;
 
 	if (!size)
 		return 0;
@@ -234,16 +234,18 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 		return 0;
 
 	while (size > FMMAP_BLOCK_SIZE) {
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, FMMAP_BLOCK_SIZE);
-		fm->curoff += FMMAP_BLOCK_SIZE;
-		size       -= FMMAP_BLOCK_SIZE;
-		count      += FMMAP_BLOCK_SIZE;
+		copysz = MIN(FMMAP_BLOCK_SIZE, fm->mapsz - fm->curoff);
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
 	}
 
 	if (size > 0) {
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, size);
-		fm->curoff += size;
-		count      += size;
+		copysz = MIN(size, fm->mapsz - fm->curoff);
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
+		fm->curoff += copysz;
+		count      += copysz;
 	}
 
 	if (fmmap_sync(fm, fm->curoff) < 0)
@@ -360,7 +362,7 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 	if (ftruncate(fm->fd, newsz) < 0)
 		return -1;
 
-	int save = save;
+	int save = errno;
 
 	/* second, create new mapping.
 	 *
