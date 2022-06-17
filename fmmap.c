@@ -50,7 +50,7 @@
 
 /* private function */
 static int fmmap_remap(struct fmmap *, size_t);
-static int fmmap_sync(struct fmmap *, size_t);
+static int fmmap_sync(struct fmmap *);
 
 struct fmmap {
 	void *addr;
@@ -248,7 +248,7 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 		count      += copysz;
 	}
 
-	if (fmmap_sync(fm, fm->curoff) < 0)
+	if (fmmap_sync(fm) < 0)
 		return 0;
 
 	return count;
@@ -383,20 +383,15 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 	/* last, update our structure. */
 	fm->addr = new;
 	fm->mapsz = newsz;
+	fm->length = newsz;
 
 	errno = save;
 	return 0;
 }
 
-/* synchronize memory with file.
- *
- * this change both file length and the data itself.
- */
-static int fmmap_sync(struct fmmap *fm, size_t newflen)
+/* synchronize memory with file */
+static int fmmap_sync(struct fmmap *fm)
 {
-	if (newflen <= fm->length)
-		return 0;
-
 	if (munmap(fm->addr, fm->mapsz) < 0)
 		return -1;
 
@@ -414,7 +409,6 @@ static int fmmap_sync(struct fmmap *fm, size_t newflen)
 	madvise(new, fm->mapsz, MADV_SEQUENTIAL);
 
 	fm->addr = new;
-	fm->length = newflen;
 
 	errno = save;
 	return 0;
