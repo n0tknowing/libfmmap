@@ -2,8 +2,8 @@ CC=gcc
 CFLAGS=-std=c99 -Wall -Wextra -pedantic -D_DEFAULT_SOURCE
 OBJS=fmmap.o
 
-ifdef SANITIZER
-ifeq ($(SANITIZER),1)
+ifdef DEBUG
+ifeq ($(DEBUG),1)
 	CFLAGS+=-g -Og -fsanitize=address,undefined
 endif
 else
