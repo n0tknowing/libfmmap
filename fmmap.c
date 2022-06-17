@@ -76,8 +76,6 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	if (filelen >= FMMAP_MAX_SIZE) {
 		errno = ERANGE;
 		return NULL;
-	} else if (filelen < FMMAP_NEWFMAPSZ) {
-		mapsz = FMMAP_NEWFMAPSZ;
 	}
 
 	fd_flag = O_RDONLY;
@@ -224,7 +222,7 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 	}
 
 	const uint8_t *sptr = ptr;
-	size_t count = 0, copysz;
+	size_t count = 0;
 
 	if (!size)
 		return 0;
@@ -236,18 +234,16 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 		return 0;
 
 	while (size > FMMAP_BLOCK_SIZE) {
-		copysz = MIN(FMMAP_BLOCK_SIZE, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, FMMAP_BLOCK_SIZE);
+		fm->curoff += FMMAP_BLOCK_SIZE;
+		size       -= FMMAP_BLOCK_SIZE;
+		count      += FMMAP_BLOCK_SIZE;
 	}
 
 	if (size > 0) {
-		copysz = MIN(size, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		count      += copysz;
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, size);
+		fm->curoff += size;
+		count      += size;
 	}
 
 	if (fmmap_sync(fm, fm->curoff) < 0)
@@ -354,29 +350,35 @@ int fmmap_close(struct fmmap *fm)
 	return r;
 }
 
-/* private functions */
+/* update both mapping size and file size for writing */
 static int fmmap_remap(struct fmmap *fm, size_t newsz)
 {
 	if (newsz <= fm->mapsz)
 		return 0;
 
-	if (munmap(fm->addr, fm->mapsz) < 0)
+	/* first, truncate file to the desired file size for writing. */
+	if (ftruncate(fm->fd, newsz) < 0)
 		return -1;
 
-	fm->addr = NULL;
-	fm->mapsz = 0;
+	int save = save;
 
-	int fm_mode = PROT_WRITE, save = errno;
-	if ((fm->mode & FMMAP_RDWR) == FMMAP_RDWR)
-		fm_mode |= PROT_READ;
-
-	void *new = mmap(NULL, newsz, fm_mode, MAP_SHARED, fm->fd, 0);
+	/* second, create new mapping.
+	 *
+	 * MREMAP_MAYMOVE to avoid ENOMEM error.
+	 */
+	void *new = mremap(fm->addr, fm->mapsz, newsz, MREMAP_MAYMOVE);
 	if (new == MAP_FAILED)
 		return -1;
 
+	/* third, request advise again.
+	 *
+	 * manual page doesn't describe what happen to the previous
+	 * advise after calling mremap.
+	 */
 	madvise(new, newsz, MADV_WILLNEED);
 	madvise(new, newsz, MADV_SEQUENTIAL);
 
+	/* last, update our structure. */
 	fm->addr = new;
 	fm->mapsz = newsz;
 
@@ -384,13 +386,14 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 	return 0;
 }
 
+/* synchronize memory with file.
+ *
+ * this change both file length and the data itself.
+ */
 static int fmmap_sync(struct fmmap *fm, size_t newflen)
 {
 	if (newflen <= fm->length)
 		return 0;
-
-	if (ftruncate(fm->fd, newflen) < 0)
-		return -1;
 
 	if (munmap(fm->addr, fm->mapsz) < 0)
 		return -1;
