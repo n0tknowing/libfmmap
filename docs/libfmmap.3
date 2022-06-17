@@ -101,11 +101,35 @@ underlying file.
 
 .TP
 \fBsize_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t length);\fP
-Read data from file and put into \fIbuf\fP with \fIlength\fP bytes.
+Read data from \fIfm\fP and store it to \fIbuf\fP with \fIlength\fP bytes.
 
 .TP
 \fBsize_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t length);\fP
-Write data from \fIbuf\fP into file with \fIlength\fP bytes.
+Write data from \fIbuf\fP to \fIfm\fP with \fIlength\fP bytes.
+
+.TP
+\fBoff_t fmmap_seek(fmmap *fm, off_t offset, int whence);\fP
+This function is identical to
+.BR lseek (2)
+
+.TP
+\fBsize_t fmmap_tell(fmmap *fm);\fP
+Get the current offset.
+
+.TP
+\fBsize_t fmmap_length(fmmap *fm);\fP
+Get the file length.
+
+.TP
+\fBvoid fmmap_rewind(fmmap *fm);\fP
+Set the current offset to the beginning of file.  It is equivalent to:
+.RS
+(void) fmmap_seek(fm, 0, FMMAP_SEEK_SET);
+.RE
+
+.TP
+\fBbool fmmap_iseof(fmmap *fm);\fP
+Check if we're at end of file.
 .SH RETURN VALUE
 .BR fmmap_open_length (),
 .BR fmmap_open (),
@@ -128,7 +152,7 @@ error.
 .BR fmmap_tell ()
 and
 .BR fmmap_length ()
-return the current offset, and the file length respectively on success or 0 on
+return the current offset and the file length respectively on success or 0 on
 error.
 
 .BR fmmap_iseof ()
@@ -162,6 +186,7 @@ Nathanael Eka Oktavian <nathekavian@gmail.com>
 .BR read (2),
 .BR write (2),
 .BR ftruncate (2),
+.BR lseek (2),
 .BR fopen (3),
 .BR fclose (3),
 .BR fread (3),
