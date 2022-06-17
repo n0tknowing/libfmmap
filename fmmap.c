@@ -367,7 +367,7 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 	fm->mapsz = 0;
 
 	int fm_mode = PROT_WRITE, save = errno;
-	if (fm->mode == FMMAP_RDWR)
+	if ((fm->mode & FMMAP_RDWR) == FMMAP_RDWR)
 		fm_mode |= PROT_READ;
 
 	void *new = mmap(NULL, newsz, fm_mode, MAP_SHARED, fm->fd, 0);
@@ -396,8 +396,9 @@ static int fmmap_sync(struct fmmap *fm, size_t newflen)
 		return -1;
 
 	fm->addr = NULL;
+
 	int fm_mode = PROT_WRITE, save = errno;
-	if (fm->mode == FMMAP_RDWR)
+	if ((fm->mode & FMMAP_RDWR) == FMMAP_RDWR)
 		fm_mode |= PROT_READ;
 
 	void *new = mmap(NULL, fm->mapsz, fm_mode, MAP_SHARED, fm->fd, 0);
