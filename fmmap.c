@@ -173,7 +173,7 @@ struct fmmap *fmmap_create(const char *filename, int mode, int perms)
 	if (fd < 0)
 		return NULL;
 
-	write(fd, "", 1);
+	ftruncate(fd, 1);
 	close(fd);
 
 	return fmmap_open_length(filename, mode, 1);
