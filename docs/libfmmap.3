@@ -49,6 +49,8 @@ void fmmap_rewind(fmmap *fm);
 bool fmmap_iseof(fmmap *fm);
 .fi
 .SH DESCRIPTION
+\fIPLEASE NOTE THAT LIBFMMAP ONLY WORKS ON REGULAR FILE AND LINUX\fP.
+
 This library provides an easy to use interfaces to work with memory-mapped
 file.  The interfaces are pretty simple if you know to use functions from
 \fI<stdio.h>\fP and \fI<unistd.h>\fP.
@@ -64,14 +66,12 @@ Additional mode for writing is available and it's one of
 \fIFMMAP_TRUNC\fP or \fIFMMAP_APPEND\fP.  You can't set these mode at the same
 time and if you set it, only \fIFMMAP_APPEND\fP will be used.
 
-This function works on both regular file and device file.
-
 .TP
 \fBfmmap *fmmap_open(const char *fname, int mode);\fP
 Open \fIfname\fP with mode \fImode\fP.  This function is identical to
 .BR fmmap_open_length ()
-except that this only works on regular file and file length is automatically
-determined, but if you try to use this function on pseudo filesystem like
+except that the file length is automatically determined, but if you try
+to use this function on pseudo filesystem like
 .BR proc (5)
 then please use
 .BR fmmap_open_length ()
