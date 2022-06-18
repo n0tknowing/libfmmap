@@ -397,24 +397,8 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 /* synchronize memory with file */
 static int fmmap_sync(struct fmmap *fm)
 {
-	if (munmap(fm->addr, fm->mapsz) < 0)
+	if (msync(fm->addr, fm->mapsz, MS_ASYNC) < 0)
 		return -1;
 
-	fm->addr = NULL;
-
-	int fm_mode = PROT_WRITE, save = errno;
-	if ((fm->mode & FMMAP_RDWR) == FMMAP_RDWR)
-		fm_mode |= PROT_READ;
-
-	void *new = mmap(NULL, fm->mapsz, fm_mode, MAP_SHARED, fm->fd, 0);
-	if (new == MAP_FAILED)
-		return -1;
-
-	madvise(new, fm->mapsz, MADV_WILLNEED);
-	madvise(new, fm->mapsz, MADV_SEQUENTIAL);
-
-	fm->addr = new;
-
-	errno = save;
 	return 0;
 }
