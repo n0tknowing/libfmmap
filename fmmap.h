@@ -31,6 +31,7 @@
 #ifndef FMMAP_H
 #define FMMAP_H
 
+#define _GNU_SOURCE
 #include <stdbool.h>
 #include <stddef.h>
 #include <sys/types.h>
