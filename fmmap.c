@@ -71,6 +71,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 
 	void *buf;
 	struct fmmap *fm;
+	struct stat sb;
 	int fd, fd_flag, fm_mode, fm_flag;
 	size_t mapsz = filelen;
 
@@ -93,6 +94,14 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	fd = open(file, fd_flag | O_CLOEXEC);
 	if (fd < 0)
 		return NULL;
+
+	if (fstat(fd, &sb) < 0)
+		goto close_fd;
+
+	if (!S_ISREG(sb.st_mode)) {
+		errno = EINVAL;
+		goto close_fd;
+	}
 
 	fm_flag = MAP_SHARED;
 	buf = mmap(NULL, mapsz, fm_mode, fm_flag, fd, 0);
@@ -144,11 +153,6 @@ struct fmmap *fmmap_open(const char *file, int mode)
 
 	if (stat(file, &sb) < 0)
 		return NULL;
-
-	if (!S_ISREG(sb.st_mode)) {
-		errno = EINVAL;
-		return NULL;
-	}
 
 	return fmmap_open_length(file, mode, sb.st_size);
 }
