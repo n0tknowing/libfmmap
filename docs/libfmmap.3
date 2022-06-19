@@ -114,6 +114,7 @@ Write data from \fIbuf\fP to \fIfm\fP with \fIlength\fP bytes.
 \fBoff_t fmmap_seek(fmmap *fm, off_t offset, int whence);\fP
 This function is identical to
 .BR lseek (2)
+except that if \fIoffset\fP is beyond the file size, it returns an error.
 
 .TP
 \fBsize_t fmmap_tell(fmmap *fm);\fP
