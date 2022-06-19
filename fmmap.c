@@ -162,21 +162,22 @@ struct fmmap *fmmap_create(const char *filename, int mode, int perms)
 	if (!filename) {
 		errno = EINVAL;
 		return NULL;
-	} else if ((mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
-		errno = EPERM;
-		return NULL;
 	}
 
 	int fd;
+	int open_flags = O_RDWR | O_CREAT;
 
-	fd = open(filename, O_RDWR|O_CREAT|O_EXCL|O_CLOEXEC, perms);
+	if ((mode & FMMAP_EXCL) == FMMAP_EXCL)
+		open_flags |= O_EXCL;
+
+	fd = open(filename, open_flags, perms);
 	if (fd < 0)
 		return NULL;
 
 	ftruncate(fd, 1);
 	close(fd);
 
-	return fmmap_open_length(filename, mode, 1);
+	return fmmap_open_length(filename, FMMAP_RDWR | FMMAP_TRUNC, 1);
 }
 
 size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)

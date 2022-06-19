@@ -41,11 +41,14 @@
 #define FMMAP_SEEK_CUR	1
 #define FMMAP_SEEK_END	2
 
+/* list of 'mode's for fmmap_open_length and fmmap_open */
 #define FMMAP_RDONLY	(1 << 0)
 #define FMMAP_WRONLY	(1 << 1)
 #define FMMAP_RDWR	(1 << 2)
 #define FMMAP_TRUNC	(1 << 3)
 #define FMMAP_APPEND	(1 << 4)
+/* only for fmmap_create */
+#define FMMAP_EXCL	(1 << 5)
 
 typedef struct fmmap fmmap;
 

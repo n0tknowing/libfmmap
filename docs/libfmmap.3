@@ -88,10 +88,13 @@ can't be used if file doesn't exist, so to solve this problem you can create
 a new file with file name \fIfname\fP, set the file \fImode\fP, and set what
 file permission should be with \fIperms\fP.
 
-\fImode\fP is like
+Currently supported \fImode\fP is \fIFMMAP_EXCL\fP, this mode tells the function
+to returns an error instead if \fIfname\fP is already exists.  If this is not
+what you want, you can set to 0.  Any \fImode\fP from
 .BR fmmap_open ()
-but you can't use \fIFMMAP_RDONLY\fP here.  And \fIperms\fP must be an octal
-value like \fI0600\fP.
+can't be used here, and it will be ignored.
+
+And \fIperms\fP must be an octal value like \fI0600\fP.
 
 .TP
 \fBint fmmap_close(fmmap *fm);\fP
