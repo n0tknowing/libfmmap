@@ -10,7 +10,7 @@ else
 	CFLAGS+=-O2
 endif
 
-all: ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8
+all: ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8 ex9
 
 ex1: $(OBJS)
 	$(CC) $(CFLAGS) $< examples/example.c -o $@
@@ -36,5 +36,8 @@ ex7: $(OBJS)
 ex8: $(OBJS)
 	$(CC) $(CFLAGS) $< examples/example7.c -o $@
 
+ex9: $(OBJS)
+	$(CC) $(CFLAGS) $< examples/example8.c -o $@
+
 clean:
-	rm -f $(OBJS) ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8
+	rm -f $(OBJS) ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8 ex9
