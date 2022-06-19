@@ -80,15 +80,19 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 		return NULL;
 	}
 
-	fd_flag = O_RDONLY;
-	fm_mode = PROT_READ;
-
 	if ((mode & FMMAP_WRONLY) == FMMAP_WRONLY) {
 		fd_flag = O_RDWR;
 		fm_mode = PROT_WRITE;
 	} else if ((mode & FMMAP_RDWR) == FMMAP_RDWR) {
 		fd_flag = O_RDWR;
 		fm_mode = PROT_READ | PROT_WRITE;
+	} else if ((mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
+		fd_flag = O_RDONLY;
+		fm_mode = PROT_READ;
+	} else {
+		/* none of three flags above present */
+		errno = EINVAL;
+		return NULL;
 	}
 
 	fd = open(file, fd_flag | O_CLOEXEC);
@@ -111,7 +115,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	/* when we encounter FMMAP_TRUNC and FMMAP_APPEND
 	 * at the same time, ignore FMMAP_TRUNC.
 	 */
-	if ((mode & FMMAP_TRUNC) == FMMAP_TRUNC &&
+	if ((mode & FMMAP_TRUNC)  == FMMAP_TRUNC &&
 	    (mode & FMMAP_APPEND) != FMMAP_APPEND) {
 		if ((mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
 			errno = EPERM;
