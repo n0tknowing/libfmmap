@@ -186,7 +186,7 @@ size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 		errno = EINVAL;
 		return 0;
 	} else if ((fm->mode & FMMAP_WRONLY) == FMMAP_WRONLY) {
-		errno = EINVAL;
+		errno = EPERM;
 		return 0;
 	}
 
