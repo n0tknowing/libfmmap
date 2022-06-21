@@ -31,11 +31,14 @@
 #ifndef FMMAP_H
 #define FMMAP_H
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <sys/types.h>
 
-#define FMMAP_MAX_SIZE  ((size_t)-1 - sizeof(size_t))
+#ifndef FMMAP_MAX_SIZE
+#define FMMAP_MAX_SIZE  LONG_MAX
+#endif
 
 #define FMMAP_SEEK_SET	0
 #define FMMAP_SEEK_CUR	1
@@ -70,7 +73,7 @@ fmmap *fmmap_create(const char *fname, int mode, int perms);
 size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t length);
 size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t length);
 
-/* fmmap_seek() returns -1 and set ERANGE errno if offset is beyond
+/* fmmap_seek() returns -1 and set EOVERFLOW errno if offset is beyond
  * the actual file size.
  */
 off_t fmmap_seek(fmmap *fm, off_t offset, int whence);

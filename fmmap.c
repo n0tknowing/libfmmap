@@ -76,7 +76,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	size_t mapsz = filelen;
 
 	if (filelen >= FMMAP_MAX_SIZE) {
-		errno = ERANGE;
+		errno = EOVERFLOW;
 		return NULL;
 	}
 
@@ -300,7 +300,7 @@ off_t fmmap_seek(struct fmmap *fm, off_t offset, int whence)
 
 beyond_size:
 	fm->curoff = oldoff;
-	errno = ERANGE;
+	errno = EOVERFLOW;
 	return -1;
 }
 
