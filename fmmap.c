@@ -127,8 +127,8 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	}
 
 	/* ignore these madvise if error */
-	madvise(buf, mapsz, MADV_WILLNEED);
-	madvise(buf, mapsz, MADV_SEQUENTIAL);
+	(void)madvise(buf, mapsz, MADV_WILLNEED);
+	(void)madvise(buf, mapsz, MADV_SEQUENTIAL);
 
 	fm = malloc(sizeof(struct fmmap));
 	if (!fm)
@@ -144,10 +144,10 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
 	return fm;
 
 delete_map:
-	munmap(buf, mapsz);
+	(void)munmap(buf, mapsz);
 
 close_fd:
-	close(fd);
+	(void)close(fd);
 	return NULL;
 }
 
@@ -178,8 +178,8 @@ struct fmmap *fmmap_create(const char *filename, int mode, int perms)
 	if (fd < 0)
 		return NULL;
 
-	ftruncate(fd, 1);
-	close(fd);
+	(void)ftruncate(fd, 1);
+	(void)close(fd);
 
 	return fmmap_open_length(filename, FMMAP_RDWR | FMMAP_TRUNC, 1);
 }
@@ -387,8 +387,8 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 	 * manual page doesn't describe what happen to the previous
 	 * advise after calling mremap.
 	 */
-	madvise(new, newsz, MADV_WILLNEED);
-	madvise(new, newsz, MADV_SEQUENTIAL);
+	(void)madvise(new, newsz, MADV_WILLNEED);
+	(void)madvise(new, newsz, MADV_SEQUENTIAL);
 
 	/* last, update our structure. */
 	fm->addr = new;
