@@ -1,9 +1,12 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra -pedantic -Wstrict-prototypes
+CFLAGS=-std=c99 -Wall -Wextra -pedantic -Wstrict-prototypes -Wstrict-aliasing
 OBJS=fmmap.o
 
 ifdef DEBUG
 ifeq ($(DEBUG),1)
+	CFLAGS+=-g -Og
+endif
+ifeq ($(DEBUG),2)
 	CFLAGS+=-g -Og -fsanitize=address,undefined
 endif
 else
