@@ -1,5 +1,7 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra -pedantic -Wstrict-prototypes -Wstrict-aliasing
+CFLAGS=-std=c99 -Wall -Wextra -pedantic -Wstrict-prototypes \
+	-Wmissing-prototypes \
+	-Wstrict-aliasing
 OBJS=fmmap.o
 
 ifdef DEBUG
@@ -11,6 +13,10 @@ ifeq ($(DEBUG),2)
 endif
 else
 	CFLAGS+=-O2
+endif
+
+ifdef FMMAP_MAX_SIZE
+	CFLAGS+=-DFMMAP_MAX_SIZE=$(FMMAP_MAX_SIZE)
 endif
 
 all: ex1 ex2 ex3 ex4 ex5 ex6 ex7 ex8 ex9
