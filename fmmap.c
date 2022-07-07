@@ -402,8 +402,5 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 /* synchronize memory with file */
 static int fmmap_sync(struct fmmap *fm)
 {
-	if (msync(fm->addr, fm->mapsz, MS_ASYNC) < 0)
-		return -1;
-
-	return 0;
+	return msync(fm->addr, fm->mapsz, MS_ASYNC);
 }
