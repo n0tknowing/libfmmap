@@ -46,7 +46,10 @@
 #define MAX(x,y)		((x) > (y) ? (x) : (y))
 #define MIN(x,y)		((x) < (y) ? (x) : (y))
 #define CUROFF_OVERFLOW(f)	((f)->curoff > (f)->length)
-#define FMMAP_BLOCK_SIZE	(1 << 16)
+#define FMMAP_BLOCK_SIZE4	8388608
+#define FMMAP_BLOCK_SIZE3	4194304
+#define FMMAP_BLOCK_SIZE2	1048576
+#define FMMAP_BLOCK_SIZE	65536
 #define FMMAP_NEWFMAPSZ		4096
 
 /* private function */
@@ -200,8 +203,34 @@ size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 	if (!size)
 		return 0;
 
-	if (CUROFF_OVERFLOW(fm))
+	if (CUROFF_OVERFLOW(fm)) {
 		fm->curoff = fm->length;
+		return 0;
+	}
+
+	while (size > FMMAP_BLOCK_SIZE4 && fm->curoff < fm->length) {
+		copysz = MIN(FMMAP_BLOCK_SIZE4, fm->length - fm->curoff);
+		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
+	}
+
+	while (size > FMMAP_BLOCK_SIZE3 && fm->curoff < fm->length) {
+		copysz = MIN(FMMAP_BLOCK_SIZE3, fm->length - fm->curoff);
+		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
+	}
+
+	while (size > FMMAP_BLOCK_SIZE2 && fm->curoff < fm->length) {
+		copysz = MIN(FMMAP_BLOCK_SIZE2, fm->length - fm->curoff);
+		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
+	}
 
 	while (size > FMMAP_BLOCK_SIZE && fm->curoff < fm->length) {
 		copysz = MIN(FMMAP_BLOCK_SIZE, fm->length - fm->curoff);
@@ -242,6 +271,30 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 
 	if (fmmap_remap(fm, fm->length + size) < 0)
 		return 0;
+
+	while (size > FMMAP_BLOCK_SIZE4) {
+		copysz = MIN(FMMAP_BLOCK_SIZE4, fm->mapsz - fm->curoff);
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
+	}
+
+	while (size > FMMAP_BLOCK_SIZE3) {
+		copysz = MIN(FMMAP_BLOCK_SIZE3, fm->mapsz - fm->curoff);
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
+	}
+
+	while (size > FMMAP_BLOCK_SIZE2) {
+		copysz = MIN(FMMAP_BLOCK_SIZE2, fm->mapsz - fm->curoff);
+		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
+		fm->curoff += copysz;
+		size       -= copysz;
+		count      += copysz;
+	}
 
 	while (size > FMMAP_BLOCK_SIZE) {
 		copysz = MIN(FMMAP_BLOCK_SIZE, fm->mapsz - fm->curoff);
