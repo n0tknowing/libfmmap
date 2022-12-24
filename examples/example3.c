@@ -5,19 +5,19 @@
 
 int main(int argc, char **argv)
 {
-	if (argc < 2)
-		return 1;
+    if (argc < 2)
+        return 1;
 
-	unsigned char *s = malloc(_BLOCK_SIZE);
-	size_t r;
+    unsigned char *s = malloc(_BLOCK_SIZE);
+    size_t r;
 
-	fmmap *f = fmmap_open(argv[1], FMMAP_RDONLY);
-	if (!f)
-		return 1;
+    fmmap *f = fmmap_open(argv[1], FMMAP_RDONLY);
+    if (!f)
+        return 1;
 
-	while ((r = fmmap_read(f, s, _BLOCK_SIZE)) > 0);
+    while ((r = fmmap_read(f, s, _BLOCK_SIZE)) > 0);
 
-	free(s);
-	fmmap_close(f);
-	return r!=0;
+    free(s);
+    fmmap_close(f);
+    return r!=0;
 }
