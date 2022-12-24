@@ -46,11 +46,6 @@
 #define MAX(x,y)		((x) > (y) ? (x) : (y))
 #define MIN(x,y)		((x) < (y) ? (x) : (y))
 #define CUROFF_OVERFLOW(f)	((f)->curoff > (f)->length)
-#define FMMAP_BLOCK_SIZE4	8388608
-#define FMMAP_BLOCK_SIZE3	4194304
-#define FMMAP_BLOCK_SIZE2	1048576
-#define FMMAP_BLOCK_SIZE	65536
-#define FMMAP_NEWFMAPSZ		4096
 
 /* private function */
 static int fmmap_remap(struct fmmap *, size_t);
@@ -198,53 +193,16 @@ size_t fmmap_read(fmmap *restrict fm, void *restrict ptr, size_t size)
 	}
 
 	uint8_t *dptr = ptr;
-	size_t count = 0, copysz;
+	size_t count = 0;
 
-	if (!size)
-		return 0;
-
-	if (CUROFF_OVERFLOW(fm)) {
-		fm->curoff = fm->length;
-		return 0;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE4 && fm->curoff < fm->length) {
-		copysz = MIN(FMMAP_BLOCK_SIZE4, fm->length - fm->curoff);
-		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE3 && fm->curoff < fm->length) {
-		copysz = MIN(FMMAP_BLOCK_SIZE3, fm->length - fm->curoff);
-		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE2 && fm->curoff < fm->length) {
-		copysz = MIN(FMMAP_BLOCK_SIZE2, fm->length - fm->curoff);
-		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE && fm->curoff < fm->length) {
-		copysz = MIN(FMMAP_BLOCK_SIZE, fm->length - fm->curoff);
-		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	if (size > 0 && fm->curoff < fm->length) {
-		copysz = MIN(size, fm->length - fm->curoff);
-		memcpy(dptr + count, (uint8_t *)fm->addr + fm->curoff, copysz);
-		fm->curoff += copysz;
-		count      += copysz;
+	/* It's safe to remove this check, but i prefer this way.
+	 * Another reason is, of course, to avoid memcpy() call with
+	 * just 0 copy size.
+	 */
+	if (fm->curoff < fm->length) {
+		count = MIN(fm->length - fm->curoff, size);
+		memcpy(dptr, (uint8_t *)fm->addr + fm->curoff, count);
+		fm->curoff += count;
 	}
 
 	return count;
@@ -260,11 +218,7 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 		return 0;
 	}
 
-	const uint8_t *sptr = ptr;
-	size_t count = 0, copysz;
-
-	if (!size)
-		return 0;
+	size_t count = 0;
 
 	if ((fm->mode & FMMAP_APPEND) == FMMAP_APPEND)
 		fm->curoff = fm->length;
@@ -272,44 +226,9 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
 	if (fmmap_remap(fm, fm->length + size) < 0)
 		return 0;
 
-	while (size > FMMAP_BLOCK_SIZE4) {
-		copysz = MIN(FMMAP_BLOCK_SIZE4, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE3) {
-		copysz = MIN(FMMAP_BLOCK_SIZE3, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE2) {
-		copysz = MIN(FMMAP_BLOCK_SIZE2, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	while (size > FMMAP_BLOCK_SIZE) {
-		copysz = MIN(FMMAP_BLOCK_SIZE, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		size       -= copysz;
-		count      += copysz;
-	}
-
-	if (size > 0) {
-		copysz = MIN(size, fm->mapsz - fm->curoff);
-		memmove((uint8_t *)fm->addr + fm->curoff, sptr + count, copysz);
-		fm->curoff += copysz;
-		count      += copysz;
-	}
+	count = MIN(fm->mapsz - fm->curoff, size);
+	memcpy((uint8_t *)fm->addr + fm->curoff, ptr, count);
+	fm->curoff += count;
 
 	if (fmmap_sync(fm) < 0)
 		return 0;
