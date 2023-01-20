@@ -13,7 +13,7 @@ int main(int argc, char **argv)
         return 1;
 
     printf("off=%zu\n", fmmap_tell(fm));
-    if (fmmap_seek(fm, 0, FMMAP_SEEK_END) < 0)
+    if (fmmap_seek(fm, 0, FMMAP_SEEK_END) == 0)
         perror("seek failed");
     printf("off=%zu\n", fmmap_tell(fm));
 

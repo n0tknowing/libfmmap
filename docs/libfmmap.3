@@ -41,7 +41,7 @@ int fmmap_close(fmmap *fm);
 size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t len);
 size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t len);
 
-off_t fmmap_seek(fmmap *fm, off_t offset, int whence);
+size_t fmmap_seek(fmmap *fm, size_t offset, int whence);
 size_t fmmap_tell(fmmap *fm);
 size_t fmmap_length(fmmap *fm);
 void fmmap_rewind(fmmap *fm);
@@ -111,10 +111,11 @@ Read data from \fIfm\fP and store it to \fIbuf\fP with \fIlength\fP bytes.
 Write data from \fIbuf\fP to \fIfm\fP with \fIlength\fP bytes.
 
 .TP
-\fBoff_t fmmap_seek(fmmap *fm, off_t offset, int whence);\fP
+\fBsize_t fmmap_seek(fmmap *fm, size_t offset, int whence);\fP
 This function is identical to
 .BR lseek (2)
-except that if \fIoffset\fP is beyond the file size, it returns an error.
+except that it uses \fIsize_t\fP instead of \fIoff_t\fP and
+if \fIoffset\fP is beyond the file size, it returns an error.
 
 .TP
 \fBsize_t fmmap_tell(fmmap *fm);\fP
@@ -150,8 +151,7 @@ and
 return the number of \fIlen\fP bytes on success or 0 on error.
 
 .BR fmmap_seek ()
-returns the number of \fIoffset\fP bytes on success or \fI(off_t) -1\fP on
-error.
+returns the number of \fIoffset\fP bytes on success or 0 on error.
 
 .BR fmmap_tell ()
 and
@@ -171,7 +171,7 @@ is set an errno, you can use
 or
 .BR strerror (3)
 for converting this errno to human-readable error message from the
-standard library.  Usually, this errno is set from underlying function
+standard library.  The rest of errno is also come from the underlying function
 that \fIlibfmmap\fP uses like
 .BR mmap (2).
 .SH BUGS

@@ -28,7 +28,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "child failed reading 5 bytes\n");
         printf("child offset after reading %zu\n", fmmap_tell(fm));
         printf("seek to EOF!\n");
-        if (fmmap_seek(fm, 0, FMMAP_SEEK_END) < 0) {
+        if (fmmap_seek(fm, 0, FMMAP_SEEK_END) == 0) {
             perror("child seek");
             goto closeit;
         }
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "parent failed reading 5 bytes\n");
         printf("parent offset after reading %zu\n", fmmap_tell(fm));
         printf("seek to EOF!\n");
-        if (fmmap_seek(fm, 0, FMMAP_SEEK_END) < 0) {
+        if (fmmap_seek(fm, 0, FMMAP_SEEK_END) == 0) {
             perror("parent seek");
             goto closeit;
         }

@@ -236,44 +236,43 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
     return count;
 }
 
-off_t fmmap_seek(struct fmmap *fm, off_t offset, int whence)
+size_t fmmap_seek(struct fmmap *fm, size_t offset, int whence)
 {
     if (fm == NULL) {
         errno = EINVAL;
-        return -1;
+        return 0;
     }
 
     size_t oldoff = fm->curoff;
 
-    /* off_t is signed integer */
-    if (offset < 0 || offset > (off_t)fm->length)
+    if (offset > fm->length)
         goto beyond_size;
 
     switch (whence) {
-        case FMMAP_SEEK_SET:
-            fm->curoff = offset;
-            break;
-        case FMMAP_SEEK_CUR:
-            fm->curoff += offset;
-            if (CUROFF_OVERFLOW(fm))
-                goto beyond_size;
-            break;
-        case FMMAP_SEEK_END:
-            fm->curoff = fm->length - offset;
-            if (CUROFF_OVERFLOW(fm))
-                goto beyond_size;
-            break;
-        default:
-            errno = EINVAL;
-            return -1;
+    case FMMAP_SEEK_SET:
+        fm->curoff = offset;
+        break;
+    case FMMAP_SEEK_CUR:
+        fm->curoff += offset;
+        if (CUROFF_OVERFLOW(fm))
+            goto beyond_size;
+        break;
+    case FMMAP_SEEK_END:
+        fm->curoff = fm->length - offset;
+        if (CUROFF_OVERFLOW(fm))
+            goto beyond_size;
+        break;
+    default:
+        errno = EINVAL;
+        return 0;
     }
 
-    return (off_t)fm->curoff;
+    return fm->curoff;
 
 beyond_size:
     fm->curoff = oldoff;
     errno = EOVERFLOW;
-    return -1;
+    return 0;
 }
 
 void fmmap_rewind(struct fmmap *fm)

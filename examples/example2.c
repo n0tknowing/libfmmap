@@ -20,11 +20,11 @@ int main(int argc, char **argv)
     if (r>0)
         printf("data: \"%s\"\n", buf);
     printf("jump to EOF!\n");
-    if (fmmap_seek(fm, 0, FMMAP_SEEK_END) < 0)
+    if (fmmap_seek(fm, 0, FMMAP_SEEK_END) == 0)
         perror("fmmap_seek SEEK_END failed");
     printf("current offset=%zu\n", fmmap_tell(fm));
     printf("jump to SOF!\n");
-    if (fmmap_seek(fm, 0, FMMAP_SEEK_SET) < 0)
+    if (fmmap_seek(fm, 0, FMMAP_SEEK_SET) == 0)
         perror("fmmap_seek SEEK_SET failed");
     printf("current offset=%zu\n", fmmap_tell(fm));
     memset(buf, 0, 11);
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     if (r>0)
         printf("data: \"%s\"\n", buf);
     printf("jump 15 bytes!\n");
-    if (fmmap_seek(fm, 15, FMMAP_SEEK_CUR) < 0)
+    if (fmmap_seek(fm, 15, FMMAP_SEEK_CUR) == 0)
         perror("fmmap_seek SEEK_CUR failed");
     printf("current offset=%zu\n", fmmap_tell(fm));
     memset(buf, 0, 11);

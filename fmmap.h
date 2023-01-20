@@ -73,10 +73,10 @@ fmmap *fmmap_create(const char *fname, int mode, int perms);
 size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t length);
 size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t length);
 
-/* fmmap_seek() returns -1 and set EOVERFLOW errno if offset is beyond
+/* fmmap_seek() returns 0 and set EOVERFLOW errno if offset is beyond
  * the actual file size.
  */
-off_t fmmap_seek(fmmap *fm, off_t offset, int whence);
+size_t fmmap_seek(fmmap *fm, size_t offset, int whence);
 
 /* in practice, fmmap_seek() is enough to covers these three functions.
  * but i will leave it to provide easy interfaces.
