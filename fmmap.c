@@ -49,7 +49,6 @@
 
 /* private function */
 static int fmmap_remap(struct fmmap *, size_t);
-static int fmmap_sync(struct fmmap *);
 
 struct fmmap {
     void *addr;
@@ -156,7 +155,7 @@ struct fmmap *fmmap_open(const char *file, int mode)
     if (stat(file, &sb) < 0)
         return NULL;
 
-    return fmmap_open_length(file, mode, sb.st_size);
+    return fmmap_open_length(file, mode, (size_t)sb.st_size);
 }
 
 struct fmmap *fmmap_create(const char *filename, int mode, int perms)
@@ -230,10 +229,20 @@ size_t fmmap_write(fmmap *restrict fm, const void *restrict ptr, size_t size)
     memcpy((uint8_t *)fm->addr + fm->curoff, ptr, count);
     fm->curoff += count;
 
-    if (fmmap_sync(fm) < 0)
-        return 0;
-
     return count;
+}
+
+int fmmap_flush(struct fmmap *fm)
+{
+    if (fm == NULL) {
+        errno = EINVAL;
+        return -1;
+    } else if ((fm->mode & FMMAP_RDONLY) == FMMAP_RDONLY) {
+        errno = EPERM;
+        return -1;
+    }
+
+    return msync(fm->addr, fm->mapsz, MS_ASYNC);
 }
 
 size_t fmmap_seek(struct fmmap *fm, size_t offset, int whence)
@@ -368,10 +377,4 @@ static int fmmap_remap(struct fmmap *fm, size_t newsz)
 
     errno = save;
     return 0;
-}
-
-/* synchronize memory with file */
-static int fmmap_sync(struct fmmap *fm)
-{
-    return msync(fm->addr, fm->mapsz, MS_ASYNC);
 }

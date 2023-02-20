@@ -85,6 +85,8 @@ size_t fmmap_tell(fmmap *fm);
 size_t fmmap_length(fmmap *fm);
 void fmmap_rewind(fmmap *fm);
 
+int fmmap_flush(fmmap *fmp);
+
 bool fmmap_iseof(fmmap *fm);
 int fmmap_close(fmmap *fm);
 #endif  /* FMMAP_H */

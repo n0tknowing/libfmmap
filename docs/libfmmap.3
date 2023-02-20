@@ -26,7 +26,7 @@
 .\" OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 .\" OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH LIBFMMAP 3 "14 June 2022" "libfmmap-git" "libfmmap Manual"
+.TH LIBFMMAP 3 "20 February 2023" "libfmmap-git" "libfmmap Manual"
 .SH NAME
 libfmmap \- helper library for memory-mapped file
 .SH SYNOPSIS
@@ -40,6 +40,8 @@ int fmmap_close(fmmap *fm);
 
 size_t fmmap_read(fmmap *restrict fm, void *restrict buf, size_t len);
 size_t fmmap_write(fmmap *restrict fm, const void *restrict buf, size_t len);
+
+int fmmap_flush(fmmap *fm);
 
 size_t fmmap_seek(fmmap *fm, size_t offset, int whence);
 size_t fmmap_tell(fmmap *fm);
@@ -111,6 +113,10 @@ Read data from \fIfm\fP and store it to \fIbuf\fP with \fIlength\fP bytes.
 Write data from \fIbuf\fP to \fIfm\fP with \fIlength\fP bytes.
 
 .TP
+\fBint fmmap_flush(fmmap *fm);\fP
+Flush write buffers, this only works if the stream is writeable.
+
+.TP
 \fBsize_t fmmap_seek(fmmap *fm, size_t offset, int whence);\fP
 This function is identical to
 .BR lseek (2)
@@ -149,6 +155,9 @@ returns 0 on success or -1 on error.
 and
 .BR fmmap_write ()
 return the number of \fIlen\fP bytes on success or 0 on error.
+
+.BR fmmap_flush ()
+returns 0 on success or -1 on error (e.g. stream is readonly).
 
 .BR fmmap_seek ()
 returns the number of \fIoffset\fP bytes on success or 0 on error.
