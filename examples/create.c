@@ -14,8 +14,7 @@ int main(int argc, char **argv)
 
     printf("len=%zu\n", fmmap_length(fm));
     printf("off=%zu\n", fmmap_tell(fm));
-    if (fmmap_seek(fm, 0, FMMAP_SEEK_END) == 0)
-        perror("seek fail");
+    fmmap_seek(fm, 0, FMMAP_SEEK_END);
     printf("off=%zu\n", fmmap_tell(fm));
 
     if (fmmap_write(fm, "hello\n", 6) != 6)
