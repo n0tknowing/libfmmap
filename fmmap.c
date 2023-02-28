@@ -43,17 +43,20 @@
 
 #include "fmmap.h"
 
+#ifndef FMMAP_MAX_SIZE
+#define FMMAP_MAX_SIZE  LONG_MAX
+#endif
+
 #define MAX(x,y)		((x) > (y) ? (x) : (y))
 #define MIN(x,y)		((x) < (y) ? (x) : (y))
 #define CUROFF_OVERFLOW(f)	((f)->curoff > (f)->length)
 
-/* private function */
 static int fmmap_remap(struct fmmap *, size_t);
 
 struct fmmap {
     void *addr;
-    size_t mapsz; /* for writing */
-    size_t length; /* for reading */
+    size_t mapsz;
+    size_t length;
     size_t curoff;
     int mode;
     int fd;
@@ -110,7 +113,7 @@ struct fmmap *fmmap_open_length(const char *file, int mode, size_t filelen)
         goto close_fd;
 
     /* when we encounter FMMAP_TRUNC and FMMAP_APPEND
-     * at the same time, ignore FMMAP_TRUNC.
+     * at the same time, ignore FMMAP_APPEND.
      */
     if ((mode & FMMAP_TRUNC) == FMMAP_TRUNC &&
         (mode & FMMAP_APPEND) != FMMAP_APPEND) {

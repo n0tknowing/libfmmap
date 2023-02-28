@@ -36,10 +36,6 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#ifndef FMMAP_MAX_SIZE
-#define FMMAP_MAX_SIZE  LONG_MAX
-#endif
-
 #define FMMAP_SEEK_SET	0
 #define FMMAP_SEEK_CUR	1
 #define FMMAP_SEEK_END	2
